@@ -34,6 +34,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <math.h>
 #include <vector>
 #include <glm/glm.hpp>
 #include "Sphere.h"
@@ -46,10 +47,10 @@
 
 using namespace std;
 
-const float WIDTH = 35.4;  
+const float WIDTH = 35.4;
 const float HEIGHT = 20.0;
 const float EDIST = 40.0;
-const int NUMDIV = 1000;
+const int NUMDIV = 2000;
 const int MAX_STEPS = 5;
 const float XMIN = -WIDTH * 0.5;
 const float XMAX =  WIDTH * 0.5;
@@ -88,7 +89,6 @@ glm::vec3 trace(Ray ray, int step)
     if(ray.xindex == -1) return backgroundCol;//If there is no intersection return background colour
 
     glm::vec3 materialCol = sceneObjects[ray.xindex]->getColor(); //else return object's colour
-    
     
     glm::vec3 normalVector = sceneObjects[ray.xindex]->normal(ray.xpt);
     
@@ -183,6 +183,12 @@ glm::vec3 trace(Ray ray, int step)
 		colorSum = texture1.getColorAt(eks, why);
 	}
     
+    	if(ray.xindex == 6)
+	{
+		float s = (ray.xpt.x+150)/300;
+		float t = (ray.xpt.y+20)/140;
+		colorSum = texture2.getColorAt(s,t);
+	}	
 
     //floor pattern
     if(ray.xindex == 4){
@@ -222,6 +228,9 @@ glm::vec3 anti_aliasing(glm::vec3 eye, float pixel_size, float xp, float yp){
 	
 	glm::vec3 colorSum(0);
 	glm::vec3 avg(0.25);
+    //nums are
+    //0.25
+    //0.75
 	
 	Ray ray = Ray(eye, glm::vec3(xp + pixel_size * 0.25, yp + pixel_size * 0.25, -EDIST));		
     ray.normalize();				
@@ -239,6 +248,95 @@ glm::vec3 anti_aliasing(glm::vec3 eye, float pixel_size, float xp, float yp){
 	ray.normalize();				
 	colorSum+=trace(ray,1);
 	
+	colorSum*= avg;
+	return colorSum;
+}
+
+
+
+glm::vec3 anti_aliasing_16times(glm::vec3 eye, float pixel_size, float xp, float yp){
+	
+	glm::vec3 colorSum(0);
+	glm::vec3 avg(0.0625);
+    
+    //top left
+    //0.125
+    //0.375
+    //0.625
+    //0.875
+	
+	Ray ray = Ray(eye, glm::vec3(xp + pixel_size * 0.125, yp + pixel_size * 0.125, -EDIST));		
+    ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.125, yp + pixel_size * 0.375, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.125, yp + pixel_size * 0.625, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.125, yp + pixel_size * 0.875, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+    
+    //top right
+    
+    ray = Ray(eye, glm::vec3(xp + pixel_size * 0.375, yp + pixel_size * 0.125, -EDIST));		
+    ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.375, yp + pixel_size * 0.375, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.375, yp + pixel_size * 0.625, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.375, yp + pixel_size * 0.875, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+    
+    
+    //bottom left
+	
+    ray = Ray(eye, glm::vec3(xp + pixel_size * 0.625, yp + pixel_size * 0.125, -EDIST));		
+    ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.625, yp + pixel_size * 0.375, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.625, yp + pixel_size * 0.625, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.625, yp + pixel_size * 0.875, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+    //bottom right
+    
+    ray = Ray(eye, glm::vec3(xp + pixel_size * 0.875, yp + pixel_size * 0.125, -EDIST));		
+    ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.875, yp + pixel_size * 0.375, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.875, yp + pixel_size * 0.625, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+	ray = Ray(eye, glm::vec3(xp + pixel_size * 0.875, yp + pixel_size * 0.875, -EDIST));
+	ray.normalize();				
+	colorSum+=trace(ray,1);
+	
+    
 	colorSum*= avg;
 	return colorSum;
 	
@@ -274,8 +372,12 @@ void display()
 
 		    Ray ray = Ray(eye, dir);		//Create a ray originating from the camera in the direction 'dir'
 			ray.normalize();				//Normalize the direction of the ray to a unit vector
-            glm::vec3 col = anti_aliasing(eye,cellX,xp,yp);
-		    //glm::vec3 col = trace (ray, 1); //Trace the primary ray and get the colour value
+            
+            
+            //glm::vec3 col = anti_aliasing_Ntimes(eye,cellX,xp,yp,4);
+            //glm::vec3 col = anti_aliasing_16times(eye,cellX,xp,yp);
+            //glm::vec3 col = anti_aliasing(eye,cellX,xp,yp);
+		    glm::vec3 col = trace (ray, 1); //Trace the primary ray and get the colour value
 
 			glColor3f(col.r, col.g, col.b);
 			glVertex2f(xp, yp);				//Draw each cell with its color value
@@ -343,6 +445,13 @@ void initialize()
      glm::vec3(120., -20, -400), //Point C
      glm::vec3(-120., -20, -400), //Point D
      glm::vec3(0.5, 0.5, 0)); //Colour
+     
+     
+	Plane *wall = new Plane(glm::vec3(-400., -20, -300),//Point A
+							glm::vec3(400., -20, -300),//Point B
+							glm::vec3(400., 250, -300),//Point C
+							glm::vec3(-400., 250, -300),//Point D
+							glm::vec3(0.2,0.2,0.2));//Colour
     
 	//-- Create a pointer to a sphere objects
 	Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -95.0), 14.0, glm::vec3(1, 0, 0.5));
@@ -358,6 +467,7 @@ void initialize()
     sceneObjects.push_back(sphere4); //3
     sceneObjects.push_back(plane); //4
     sceneObjects.push_back(cone4); //5
+    sceneObjects.push_back(wall); //6
     drawCube(8, -10.0, -60.0,4,8,4,glm::vec3(0.9, 0.29, 0.1));//6-11
 }
 
@@ -366,7 +476,7 @@ void initialize()
 int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB );
-    glutInitWindowSize(1280, 720);
+    glutInitWindowSize(800, 450);
     glutInitWindowPosition(20, 20);
     glutCreateWindow("Raytracer");
 
